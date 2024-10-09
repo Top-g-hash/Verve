@@ -27,28 +27,27 @@ pub async fn handle_input(input: String) -> (Vec<String>, f32, i32) {
     let mut result_type: ResultType;
     let start_time = Instant::now();
     if !input.starts_with("/") {
-        result = search(
-            input.as_str(),
-            vec![
-                "/Applications",
-                "/System/Applications",
-                "/System/Applications/Utilities",
-            ],
-            Some(".app"),
-            Some(1),
-        );
-        similarity_sort(&mut result, input.as_str());
-        result_type = ResultType::Applications;
-    } else {
-        result = search(
-            input.trim_start_matches("/"),
-            vec!["/Users/"],
-            None,
-            Some(10000),
-        );
-        println!("{:?}", result);
-        result_type = ResultType::Files;
-    }
+    result = search(
+        input.as_str(),
+        vec![
+            "/usr/bin",
+            "/usr/share/applications",
+        ],
+        None, // No specific extension for Linux
+        Some(1),
+    );
+    similarity_sort(&mut result, input.as_str());
+    result_type = ResultType::Applications;
+} else {
+    result = search(
+        input.trim_start_matches("/"),
+        vec!["/home/"], // Search in the user's home directory
+        None,
+        Some(10000),
+    );
+    println!("{:?}", result);
+    result_type = ResultType::Files;
+}
     if result.len() == 0 {
         let calculation_result = calculate(input.as_str());
         if calculation_result != "" {
