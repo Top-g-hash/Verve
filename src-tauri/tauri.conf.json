@@ -22,6 +22,9 @@
         "writeFile": true,
         "scope": ["$APPDATA/*"]
       },
+        "shell": {
+        "all": true
+      },
       "globalShortcut": {
         "all": true
       },

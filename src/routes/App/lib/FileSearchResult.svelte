@@ -6,8 +6,10 @@
   export let filePath:string;
   export let resultType: number;
   let appNames:string = ""
+  let iconPath :string = ""
+   
     async function fetchAppNames() {
- 
+      
        appNames = await invoke('extract_name_from_desktop_entry', { filePath });
   
   }

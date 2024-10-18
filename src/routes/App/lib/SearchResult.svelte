@@ -17,16 +17,16 @@
       await firstResult.focus();
     }
   });
-
-  const searchResultClicked = async (event: any) => {
-    await invoke('open_command', { path: event.target.id });
-    const searchBarInput = document.getElementById(
-      'searchBarInput'
-    ) as HTMLInputElement;
-    results = [];
-    searchBarInput.value = '';
-    await appWindow.hide();
-  };
+const searchResultClicked = async (event: any) => {
+  console.log(event.target.id); // Check if this is the expected file path
+  await invoke('execute_desktop_file', { desktopFilePath: event.target.id });
+  const searchBarInput = document.getElementById(
+    'searchBarInput'
+  ) as HTMLInputElement;
+  results = [];
+  searchBarInput.value = '';
+  await appWindow.hide();
+};
 
   async function handleKeydown(event) {
     if (event.keyCode == 38 || event.keyCode == 40) {

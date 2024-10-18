@@ -59,6 +59,17 @@ pub async fn extract_name_from_desktop_entry(file_path: String) -> String {
 
     "".to_string() // Return "Unknown" if no name is found
 }
+#[tauri::command]
+pub async fn extract_icon_from_desktop_entry(file_path: String) -> String {
+    // Attempt to extract the icon from the desktop entry
+    if let Some(icon) = extract_desktop_entry(&file_path, 2) { 
+        println!("Extracted icon: {}", icon);
+        return icon; // Return the icon if it exists
+    }
+
+    // Return "Unknown" if no icon is found
+    "Unknown".to_string()
+}
 
 #[tauri::command]
 pub async fn handle_input(input: String) -> (Vec<String>, f32, i32) {
@@ -115,26 +126,29 @@ pub fn get_icon(app_name: &str) -> String {
     }
     return String::from("");
 }
-
 #[tauri::command]
-pub async fn execute_desktop_file(desktop_file_path: &str) -> io::Result<()> {
+pub async fn execute_desktop_file(desktop_file_path: &str) -> Result<(), String> {
+    // Log the command being executed for debugging purposes
+    println!("Executing command from desktop file: {}", desktop_file_path);
+
     // Extract the command from the specified line (e.g., Exec line)
-    let command = extract_desktop_entry(desktop_file_path, 2)
-        .expect("Failed to get command from the desktop entry");
+    let command = extract_desktop_entry(desktop_file_path, 3)
+        .ok_or_else(|| "Failed to get command from the desktop entry".to_string())?;
 
     // Split command and its arguments (if any)
     let mut parts = command.split_whitespace();
-    let program = parts.next().expect("No program found");
+    let program = parts.next().ok_or_else(|| "No program found".to_string())?;
     let args: Vec<&str> = parts.collect();
 
-    // Execute the command
+    // Execute the command directly, instead of using xdg-open
     let mut child = Command::new(program)
         .args(&args)
         .spawn()
-        .expect("Failed to execute command");
+        .map_err(|e| format!("Failed to execute command: {}", e))?;
 
     // Wait for the command to finish
-    let _result = child.wait()?;
+    child.wait()
+        .map_err(|e| format!("Command execution failed: {}", e))?;
 
     Ok(())
 }
