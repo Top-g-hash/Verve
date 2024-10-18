@@ -10,7 +10,7 @@ use auto_launch::AutoLaunchBuilder;
 use calculator::calculate;
 use directories::ProjectDirs;
 use std::{process::Command, time::Instant};
-use std::collections::HashMap;
+use std::io;
 use std::fs;
 
 pub use icons::convert_all_app_icons_to_png;
@@ -22,45 +22,42 @@ pub enum ResultType {
     Files = 2,
     Calculation = 3,
 }
+
+
+
 #[tauri::command]
-// Function to extract `Name`, `Icon`, and `Exec` fields from .desktop files
 fn extract_desktop_entry(file_path: &str, selection: u8) -> Option<String> {
     // Read the contents of the file
     if let Ok(contents) = fs::read_to_string(file_path) {
-        let mut app_details = HashMap::new();
-        
-        // Parse each line for relevant details
+        // Parse each line and return early when the requested field is found
         for line in contents.lines() {
-            if line.starts_with("Name=") {
-                app_details.insert("Name", line["Name=".len()..].to_string());
-            } else if line.starts_with("Exec=") {
-                app_details.insert("Exec", line["Exec=".len()..].to_string());
-            } else if line.starts_with("Icon=") {
-                app_details.insert("Icon", line["Icon=".len()..].to_string());
+            match selection {
+                1 if line.starts_with("Name=") => {
+                    return Some(line["Name=".len()..].to_string());
+                }
+                2 if line.starts_with("Icon=") => {
+                    return Some(line["Icon=".len()..].to_string());
+                }
+                3 if line.starts_with("Exec=") => {
+                    return Some(line["Exec=".len()..].to_string());
+                }
+                _ => continue,
             }
         }
-
-        // Select the requested field based on the selection parameter
-        match selection {
-            1 => app_details.get("Name").cloned(),
-            2 => app_details.get("Icon").cloned(),
-            3 => app_details.get("Exec").cloned(),
-            _ => None,
-        }
-    } else {
-        None
     }
+    None
 }
-fn extract_names_from_desktop_entries(file_paths: Vec<String>) -> Vec<String> {
-    let mut names = Vec::new();
 
-    for file_path in file_paths {
-        if let Some(name) = extract_desktop_entry(&file_path, 1) {
-            names.push(name); // Add the name to the vector if it exists
-        }
+
+#[tauri::command]
+pub async fn extract_name_from_desktop_entry(file_path: String) -> String {
+    if let Some(name) = extract_desktop_entry(&file_path, 1) {
+        println!("Extracted names: {}", name);
+        return name; // Return the name if it exists
+        
     }
 
-    names
+    "".to_string() // Return "Unknown" if no name is found
 }
 
 #[tauri::command]
@@ -80,7 +77,8 @@ pub async fn handle_input(input: String) -> (Vec<String>, f32, i32) {
         Some(".desktop"),  // Change this to search for .desktop files
         Some(1),           // Limit to 1 result (or adjust as needed)
     );
-     result = extract_names_from_desktop_entries(result);
+    
+    //  result = extract_names_from_desktop_entries(result);
     similarity_sort(&mut result, input.as_str());
    
     result_type = ResultType::Applications;
@@ -119,7 +117,30 @@ pub fn get_icon(app_name: &str) -> String {
 }
 
 #[tauri::command]
+pub async fn execute_desktop_file(desktop_file_path: &str) -> io::Result<()> {
+    // Extract the command from the specified line (e.g., Exec line)
+    let command = extract_desktop_entry(desktop_file_path, 2)
+        .expect("Failed to get command from the desktop entry");
+
+    // Split command and its arguments (if any)
+    let mut parts = command.split_whitespace();
+    let program = parts.next().expect("No program found");
+    let args: Vec<&str> = parts.collect();
+
+    // Execute the command
+    let mut child = Command::new(program)
+        .args(&args)
+        .spawn()
+        .expect("Failed to execute command");
+
+    // Wait for the command to finish
+    let _result = child.wait()?;
+
+    Ok(())
+}
+#[tauri::command]
 pub fn open_command(path: &str) {
+
     Command::new("open")
         .arg(path.trim())
         .spawn()

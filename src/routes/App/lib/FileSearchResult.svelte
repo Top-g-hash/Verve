@@ -1,8 +1,20 @@
 <script lang="ts">
   import { getFileName, getTruncatedFilePath } from '../../../utils/path';
   import { getIcon } from '../../../utils/icon';
-  export let filePath;
+  import { invoke } from '@tauri-apps/api/tauri';
+  import {  afterUpdate } from 'svelte';
+  export let filePath:string;
   export let resultType: number;
+  let appNames:string = ""
+    async function fetchAppNames() {
+ 
+       appNames = await invoke('extract_name_from_desktop_entry', { filePath });
+  
+  }
+   afterUpdate(() => {
+    fetchAppNames();
+  });
+ 
 </script>
 
 <button on:click class="searchResult" id={filePath}>
@@ -21,7 +33,7 @@
       />
     {/await}
     <p class="fileName">
-      {getFileName(filePath).replace(/.app$/, '')}
+      {appNames}
     </p>
   </div>
   {#if resultType == 2}

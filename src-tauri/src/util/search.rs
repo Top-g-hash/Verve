@@ -36,6 +36,7 @@ pub fn search(
         .ignore_case()
         .build()
         .collect();
+    
     similarity_sort(&mut result, input);
     return result;
 }

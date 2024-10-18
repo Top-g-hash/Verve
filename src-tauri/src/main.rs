@@ -10,7 +10,7 @@ use tauri::{
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 
 use util::{
-    convert_all_app_icons_to_png, create_preferences_if_missing, get_icon, handle_input,
+    convert_all_app_icons_to_png, create_preferences_if_missing, get_icon, handle_input,extract_name_from_desktop_entry,
     launch_on_login, open_command,
 };
 
@@ -36,7 +36,8 @@ fn main() {
             open_command,
             get_icon,
             handle_input,
-            launch_on_login
+            launch_on_login,
+            extract_name_from_desktop_entry,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
