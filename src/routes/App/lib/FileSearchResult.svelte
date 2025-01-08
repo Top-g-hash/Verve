@@ -2,37 +2,45 @@
   import { getFileName, getTruncatedFilePath } from '../../../utils/path';
   import { getIcon } from '../../../utils/icon';
   import { invoke } from '@tauri-apps/api/tauri';
-  import {  afterUpdate } from 'svelte';
-  export let filePath:string;
-  export let resultType: number;
-  let appNames:string = ""
-  let iconPath :string = ""
-   
-    async function fetchAppNames() {
-      
-       appNames = await invoke('extract_name_from_desktop_entry', { filePath });
+  import { afterUpdate } from 'svelte';
   
+  export let filePath: string;
+  export let resultType: number;
+  let appNames: string = "";
+  let iconPath: string = "";
+   
+  async function fetchAppNames() {
+    appNames = await invoke('extract_name_from_desktop_entry', { filePath });
+    iconPath = await invoke('extract_icon_path_from_desktop', { filePath });
   }
-   afterUpdate(() => {
+
+  afterUpdate(() => {
     fetchAppNames();
   });
- 
+
+  // Create a reactive statement to handle icon loading
+  let iconPromise: Promise<{ icon: string; fallbackIcon: string }>;
+  $: {iconPromise = getIcon(filePath);
+    
+  }
 </script>
 
 <button on:click class="searchResult" id={filePath}>
   <div class="resultContent">
-    {#await getIcon(getFileName(filePath).replace(/.app$/, ''))}
+    {#await iconPromise}
       <span class="icon" />
-    {:then { icon, fallbackIcon }}
+    {:then iconData}
       <img
         class="icon"
-        src={icon}
+        src={iconData.icon}
         alt=""
         on:error={event => {
           // @ts-ignore
-          event.target.src = fallbackIcon;
+          event.target.src = iconData.fallbackIcon;
         }}
       />
+    {:catch error}
+      <span class="icon" />
     {/await}
     <p class="fileName">
       {appNames}
@@ -85,6 +93,7 @@
     order: 1;
     flex-grow: 0;
   }
+
   .resultContent {
     display: flex;
     flex-direction: row;

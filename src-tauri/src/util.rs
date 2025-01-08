@@ -16,7 +16,7 @@ use std::fs;
 pub use icons::convert_all_app_icons_to_png;
 pub use preferences::create_preferences_if_missing;
 pub use search::{search, similarity_sort};
-
+pub use icons::find_icon_path;
 pub enum ResultType {
     Applications = 1,
     Files = 2,
@@ -59,17 +59,7 @@ pub async fn extract_name_from_desktop_entry(file_path: String) -> String {
 
     "".to_string() // Return "Unknown" if no name is found
 }
-#[tauri::command]
-pub async fn extract_icon_from_desktop_entry(file_path: String) -> String {
-    // Attempt to extract the icon from the desktop entry
-    if let Some(icon) = extract_desktop_entry(&file_path, 2) { 
-        println!("Extracted icon: {}", icon);
-        return icon; // Return the icon if it exists
-    }
 
-    // Return "Unknown" if no icon is found
-    "Unknown".to_string()
-}
 
 #[tauri::command]
 pub async fn handle_input(input: String) -> (Vec<String>, f32, i32) {
@@ -126,6 +116,20 @@ pub fn get_icon(app_name: &str) -> String {
     }
     return String::from("");
 }
+
+#[tauri::command]
+pub fn extract_icon_path_from_desktop(file_path: &str) -> String {
+    if let Some(icon_name) = extract_desktop_entry(file_path, 2) {
+        if let Some(icon_path) = find_icon_path(&icon_name) {
+             println!("{}",icon_path);
+            return icon_path; // Return the found icon path
+        }
+    }
+   println!("No icon path found");
+    "".to_string() // Return a default message if the icon is not found
+}
+
+
 #[tauri::command]
 pub async fn execute_desktop_file(desktop_file_path: &str) -> Result<(), String> {
     // Log the command being executed for debugging purposes
@@ -152,6 +156,7 @@ pub async fn execute_desktop_file(desktop_file_path: &str) -> Result<(), String>
 
     Ok(())
 }
+
 #[tauri::command]
 pub fn open_command(path: &str) {
 

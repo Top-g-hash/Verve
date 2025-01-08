@@ -77,3 +77,26 @@ pub fn convert_all_app_icons_to_png() {
         }
     }
 }
+pub fn find_icon_path(icon_name: &str) -> Option<String> {
+    // Standard icon directories to search, without trailing slashes
+    let icon_dirs = [
+        "/usr/share/icons",
+        "/usr/share/pixmaps",
+        "~/.icons",
+        "~/.local/share/icons",
+    ];
+
+    // Check common icon file extensions
+    let extensions = ["png", "svg", "xpm"];
+
+    // Search for the icon in the directories
+    for dir in &icon_dirs {
+        for ext in &extensions {
+            let icon_path = Path::new(dir).join(format!("{}.{}", icon_name, ext));
+            if icon_path.exists() {
+                return Some(icon_path.to_string_lossy().to_string());
+            }
+        }
+    }
+    None
+}
